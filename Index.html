@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Sistem Penilaian siswa</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml"
+        href="https://upload.wikimedia.org/wikipedia/commons/9/9c/Logo_of_Ministry_of_Education_and_Culture_of_Republic_of_Indonesia.svg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Montserrat', 'sans-serif'] }, colors: { darkbg: '#0f172a', darkcard: '#1e293b', darkborder: '#334155' } } } }</script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            transition: background-color 0.4s ease, color 0.4s ease;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        .theme-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background: #cbd5e1;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: 0.4s;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 5px;
+        }
+
+        .dark .theme-switch {
+            background: #334155;
+        }
+
+        .theme-switch .slider {
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            left: 4px;
+            transition: 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 2;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .dark .theme-switch .slider {
+            transform: translateX(30px);
+            background: #facc15;
+        }
+
+        .theme-icon {
+            font-size: 14px;
+            z-index: 1;
+            user-select: none;
+        }
+
+        .star-rating {
+            display: inline-flex;
+            flex-direction: row-reverse;
+        }
+
+        .star-rating input {
+            display: none;
+        }
+
+        .star-rating label {
+            font-size: 24px;
+            color: #cbd5e1;
+            cursor: pointer;
+            transition: color 0.2s;
+            padding: 0 2px;
+        }
+
+        .dark .star-rating label {
+            color: #475569;
+        }
+
+        .star-rating input:checked~label,
+        .star-rating label:hover,
+        .star-rating label:hover~label {
+            color: #fbbf24;
+        }
+
+        .swal2-popup.swal-dark {
+            background-color: #1e293b !important;
+            color: #f8fafc !important;
+        }
+
+        .swal2-title.swal-dark-text,
+        .swal2-html-container.swal-dark-text {
+            color: #f8fafc !important;
+        }
+
+        #sidebar {
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #reader__scan_region img {
+            display: none !important;
+        }
+
+        .loader-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 0;
+        }
+
+        .loader-spinner {
+            animation: spin 1s linear infinite;
+            height: 3rem;
+            width: 3rem;
+            color: #3b82f6;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800 dark:bg-darkbg dark:text-gray-100 min-h-screen flex overflow-hidden"
+    onclick="closeAllDropdowns(event)">
+
+    <!-- VIEW: LOGIN -->
+    <div id="view-login"
+        class="absolute inset-0 z-50 flex items-center justify-center bg-gray-100 dark:bg-darkbg transition-colors duration-500">
+        <div
+            class="bg-white dark:bg-darkcard p-10 rounded-3xl shadow-2xl border border-gray-200 dark:border-darkborder w-full max-w-md animate-fade-in relative overflow-hidden">
+            <div
+                class="absolute -top-20 -right-20 w-40 h-40 bg-blue-500 rounded-full mix-blend-multiply filter blur-2xl opacity-20 animate-pulse">
+            </div>
+            <div class="text-center mb-10 relative z-10">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/9/9c/Logo_of_Ministry_of_Education_and_Culture_of_Republic_of_Indonesia.svg"
+                    class="w-24 h-24 mx-auto mb-4 drop-shadow-md" alt="Logo">
+                <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">EduManage</h2>
+                <p class="text-sm text-gray-500 mt-1">Sistem Manajemen Akademik</p>
+            </div>
+            <form id="form-login" onsubmit="event.preventDefault(); prosesLogin();" class="space-y-6 relative z-10">
+                <div>
+                    <label class="block text-sm font-semibold mb-2 text-gray-700 dark:text-gray-300">Username</label>
+                    <div class="relative"><input type="text" id="input-username" required
+                            class="w-full pl-11 pr-4 py-3.5 bg-gray-50 dark:bg-[#0f172a] border border-gray-300 dark:border-gray-600 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium"
+                            placeholder="admin"
+                            onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('input-password').focus();}"><svg
+                            class="w-5 h-5 absolute left-4 top-3.5 text-gray-400" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg></div>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-2 text-gray-700 dark:text-gray-300">Password</label>
+                    <div class="relative"><input type="password" id="input-password" required
+                            class="w-full pl-11 pr-4 py-3.5 bg-gray-50 dark:bg-[#0f172a] border border-gray-300 dark:border-gray-600 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium"
+                            placeholder="••••••••"><svg class="w-5 h-5 absolute left-4 top-3.5 text-gray-400"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
+                            </path>
+                        </svg></div>
+                </div>
+                <button type="submit" id="btn-login"
+                    class="w-full mt-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 text-white font-bold py-4 px-4 rounded-xl shadow-lg active:scale-95 transition-all"><span
+                        id="btn-text">MASUK SISTEM</span></button>
+            </form>
+        </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <nav id="sidebar"
+        class="bg-white dark:bg-darkcard w-72 flex-shrink-0 flex flex-col border-r border-gray-200 dark:border-darkborder z-40 hidden md:flex h-screen relative">
+        <div class="p-6 flex justify-between items-center border-b border-gray-100 dark:border-darkborder cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors"
+            onclick="navigate('dashboard', document.getElementById('nav-dash'))">
+            <div class="flex items-center gap-3"><img
+                    src="https://upload.wikimedia.org/wikipedia/commons/9/9c/Logo_of_Ministry_of_Education_and_Culture_of_Republic_of_Indonesia.svg"
+                    class="w-8 h-8" alt="Logo">
+                <h1 class="text-xl font-extrabold text-gray-900 dark:text-white">EduManage</h1>
+            </div>
+        </div>
+        <div class="flex flex-col px-4 py-6 space-y-2 flex-1 overflow-y-auto" id="nav-menu">
+            <p class="px-4 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Menu Utama</p>
+            <button id="nav-dash" onclick="navigate('dashboard', this)"
+                class="nav-btn flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"><svg
+                    class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z">
+                    </path>
+                </svg> Dashboard Analitik</button>
+            <button onclick="navigate('siswa', this)"
+                class="nav-btn flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"><svg
+                    class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z">
+                    </path>
+                </svg> Database Siswa</button>
+            <button onclick="navigate('nilai', this)"
+                class="nav-btn flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"><svg
+                    class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                    </path>
+                </svg> Penilaian & Akademik</button>
+            <p class="px-4 text-xs font-bold text-gray-400 uppercase tracking-wider mt-6 mb-2">Operasional</p>
+            <button onclick="navigate('presensi', this)"
+                class="nav-btn flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"><svg
+                    class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z">
+                    </path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg> Scanner Presensi</button>
+        </div>
+        <div class="p-6 border-t border-gray-100 dark:border-darkborder">
+            <button onclick="confirmLogout()"
+                class="w-full flex justify-center items-center gap-2 px-4 py-3 rounded-xl text-sm font-bold text-rose-500 bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 transition-colors"><svg
+                    class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
+                    </path>
+                </svg> Keluar Sistem</button>
+        </div>
+    </nav>
+
+    <!-- HEADER & MAIN -->
+    <div class="flex-1 flex flex-col h-screen overflow-hidden hidden" id="app-layout">
+        <header
+            class="h-20 bg-white/80 dark:bg-darkcard/80 backdrop-blur-md border-b border-gray-200 dark:border-darkborder flex items-center justify-between px-6 z-30">
+            <div class="flex items-center gap-4">
+                <button onclick="toggleSidebar()"
+                    class="p-2.5 rounded-xl bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 transition-colors"><svg
+                        class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h7"></path>
+                    </svg></button>
+                <h2 id="header-title" class="text-xl font-bold text-gray-800 dark:text-white hidden sm:block">Dashboard
+                </h2>
+            </div>
+            <div class="flex items-center gap-6">
+                <div class="theme-switch shadow-sm border border-gray-200 dark:border-gray-700" onclick="toggleTheme()">
+                    <span class="theme-icon">🌜</span><span class="theme-icon">🌞</span>
+                    <div class="slider"></div>
+                </div>
+                <div class="flex items-center gap-3 border-l border-gray-200 dark:border-gray-700 pl-6">
+                    <div
+                        class="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-500 text-white flex items-center justify-center font-bold">
+                        A</div>
+                    <div class="hidden md:block">
+                        <p class="text-sm font-bold text-gray-900 dark:text-white leading-tight">Admin Master</p>
+                        <p class="text-xs text-gray-500">Administrator</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto p-4 md:p-8 relative" id="main-content">
+
+            <!-- DASHBOARD -->
+            <div id="view-dashboard" class="view-section animate-fade-in pb-10">
+                <div id="dash-loading" class="loader-container">
+                    <svg class="loader-spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
+                    </svg>
+                    <p class="text-gray-500 font-medium animate-pulse">Menyiapkan Dashboard Analitik...</p>
+                </div>
+
+                <div id="dash-content" class="hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div
+                            class="bg-white dark:bg-darkcard p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-darkborder relative overflow-hidden group hover:-translate-y-2 hover:shadow-xl transition-all duration-300 cursor-default">
+                            <div
+                                class="absolute -right-4 -bottom-4 w-24 h-24 bg-blue-50 dark:bg-blue-900/20 rounded-full group-hover:scale-150 transition-transform duration-500">
+                            </div>
+                            <div class="relative z-10 flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1">Total Siswa
+                                        Aktif</p>
+                                    <h3 id="dash-total" class="text-4xl font-black text-gray-900 dark:text-white">0</h3>
+                                </div>
+                                <div class="p-3 bg-blue-100 text-blue-600 rounded-xl"><svg class="w-7 h-7" fill="none"
+                                        stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                                        </path>
+                                    </svg></div>
+                            </div>
+                        </div>
+                        <div
+                            class="bg-white dark:bg-darkcard p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-darkborder relative overflow-hidden group hover:-translate-y-2 hover:shadow-xl transition-all duration-300 cursor-default">
+                            <div
+                                class="absolute -right-4 -bottom-4 w-24 h-24 bg-emerald-50 dark:bg-emerald-900/20 rounded-full group-hover:scale-150 transition-transform duration-500">
+                            </div>
+                            <div class="relative z-10 flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1">Siswa Hadir
+                                        Hari Ini</p>
+                                    <h3 id="dash-hadir" class="text-4xl font-black text-gray-900 dark:text-white">0</h3>
+                                </div>
+                                <div class="p-3 bg-emerald-100 text-emerald-600 rounded-xl"><svg class="w-7 h-7"
+                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg></div>
+                            </div>
+                        </div>
+                        <div
+                            class="bg-white dark:bg-darkcard p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-darkborder relative overflow-hidden group hover:-translate-y-2 hover:shadow-xl transition-all duration-300 cursor-default">
+                            <div
+                                class="absolute -right-4 -bottom-4 w-24 h-24 bg-purple-50 dark:bg-purple-900/20 rounded-full group-hover:scale-150 transition-transform duration-500">
+                            </div>
+                            <div class="relative z-10 flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1">Persentase
+                                        Kehadiran</p>
+                                    <h3 id="dash-persen" class="text-4xl font-black text-gray-900 dark:text-white">0%
+                                    </h3>
+                                </div>
+                                <div class="p-3 bg-purple-100 text-purple-600 rounded-xl"><svg class="w-7 h-7"
+                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                                    </svg></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                        <div
+                            class="lg:col-span-2 bg-white dark:bg-darkcard p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-darkborder">
+                            <h3 class="font-bold text-lg mb-4 flex items-center gap-2"><svg
+                                    class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z">
+                                    </path>
+                                </svg> Trend Nilai Mata Pelajaran</h3>
+                            <div class="h-72 w-full"><canvas id="lineChart"></canvas></div>
+                        </div>
+                        <div
+                            class="bg-white dark:bg-darkcard p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-darkborder">
+                            <h3 class="font-bold text-lg mb-4 flex items-center gap-2"><svg
+                                    class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg> Status Kelulusan (KKM 75)</h3>
+                            <div class="h-60 w-full flex justify-center"><canvas id="donutChart"></canvas></div>
+                        </div>
+                    </div>
+
+                    <div
+                        class="bg-white dark:bg-darkcard rounded-2xl shadow-sm border border-gray-100 dark:border-darkborder overflow-hidden">
+                        <div
+                            class="p-4 border-b border-gray-100 dark:border-darkborder flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-50/50 dark:bg-slate-800/30">
+                            <div class="flex items-center gap-3 text-sm">
+                                <span class="text-gray-500 font-medium">Tampilkan</span>
+                                <select id="rows-dash" onchange="updateTableDash()"
+                                    class="p-2 border rounded-lg bg-white dark:bg-slate-700 outline-none focus:ring-2 focus:ring-blue-500 font-semibold">
+                                    <option value="10">10</option>
+                                    <option value="25">25</option>
+                                    <option value="50">50</option>
+                                </select>
+                            </div>
+                            <div class="relative w-full md:w-72">
+                                <input type="text" id="search-dash" oninput="updateTableDash()"
+                                    placeholder="Pencarian Cepat..."
+                                    class="w-full p-2.5 pl-10 border rounded-xl bg-gray-50 dark:bg-[#0f172a] outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                <svg class="w-4 h-4 absolute left-3.5 top-3.5 text-gray-400" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-left text-sm whitespace-nowrap">
+                                <thead
+                                    class="bg-gray-100/80 dark:bg-slate-800/80 text-gray-500 dark:text-gray-400 font-semibold text-xs uppercase tracking-wider">
+                                    <tr>
+                                        <th class="px-5 py-4">NIS / Nama</th>
+                                        <th class="px-5 py-4 text-center">Jam Hadir Terbaru</th>
+                                        <th class="px-5 py-4 text-center">Total Hadir</th>
+                                        <th class="px-5 py-4 text-center">Rata Nilai</th>
+                                        <th class="px-5 py-4 text-center">Sikap</th>
+                                        <th class="px-5 py-4 text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dash-table-body" class="divide-y divide-gray-100 dark:divide-gray-700/50">
+                                </tbody>
+                            </table>
+                        </div>
+                        <div
+                            class="p-4 border-t border-gray-100 dark:border-darkborder flex justify-between items-center text-sm bg-gray-50/50 dark:bg-slate-800/30">
+                            <span id="page-info-dash" class="text-gray-500 font-medium">Data: 0</span>
+                            <div class="flex gap-2">
+                                <button onclick="changePageDash(-1)" id="prev-dash"
+                                    class="px-4 py-2 border rounded-lg bg-white dark:bg-slate-700 hover:bg-gray-50 disabled:opacity-40 font-medium">Prev</button>
+                                <button onclick="changePageDash(1)" id="next-dash"
+                                    class="px-4 py-2 border rounded-lg bg-white dark:bg-slate-700 hover:bg-gray-50 disabled:opacity-40 font-medium">Next</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: DATA SISWA -->
+            <div id="view-siswa" class="view-section hidden animate-fade-in">
+                <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h2 class="text-3xl font-extrabold tracking-tight">Database Siswa</h2>
+                        <p class="text-gray-500 dark:text-gray-400 mt-1">Kelola biodata dan status peserta didik</p>
+                    </div>
+                    <div class="relative dropdown-container">
+                        <button onclick="toggleDropdown('drop-siswa')"
+                            class="bg-gray-800 hover:bg-gray-900 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl shadow-lg font-bold flex items-center gap-2 transition-all">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                                </path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg> Opsi Menu
+                        </button>
+                        <div id="drop-siswa"
+                            class="hidden absolute right-0 mt-2 w-56 bg-white dark:bg-darkcard border border-gray-100 dark:border-darkborder rounded-xl shadow-2xl z-50 overflow-hidden text-sm">
+                            <button onclick="exportTemplateSiswa()"
+                                class="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 font-bold flex items-center gap-2"><span
+                                    class="text-emerald-500">⬇️</span> Download Template</button>
+                            <label
+                                class="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 font-bold flex items-center gap-2 cursor-pointer border-b border-gray-100 dark:border-gray-700"><span
+                                    class="text-amber-500">⬆️</span> Import Excel <input type="file" class="hidden"
+                                    accept=".xlsx, .xls" onchange="importExcelSiswa(event)"></label>
+                            <button onclick="openModalSiswa('add')"
+                                class="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 text-blue-600 font-bold flex items-center gap-2">➕
+                                Tambah Manual</button>
+                        </div>
+                    </div>
+                </div>
+                <div
+                    class="bg-white dark:bg-darkcard rounded-2xl shadow-sm border border-gray-100 dark:border-darkborder overflow-hidden">
+                    <div
+                        class="p-4 border-b border-gray-100 dark:border-darkborder flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-50/50 dark:bg-slate-800/30">
+                        <div class="flex items-center gap-3 text-sm"><span
+                                class="text-gray-500 font-medium">Tampilkan</span><select id="rows-per-page"
+                                onchange="updateTableState()"
+                                class="p-2 border rounded-lg bg-white dark:bg-slate-700 outline-none focus:ring-2 focus:ring-blue-500 font-semibold">
+                                <option value="10">10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select></div>
+                        <div class="relative w-full md:w-72"><input type="text" id="search-siswa"
+                                oninput="updateTableState()" placeholder="Pencarian Cepat..."
+                                class="w-full p-2.5 pl-10 border rounded-xl bg-gray-50 dark:bg-[#0f172a] outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all"><svg
+                                class="w-4 h-4 absolute left-3.5 top-3.5 text-gray-400" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg></div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-left text-sm whitespace-nowrap">
+                            <thead
+                                class="bg-gray-100/80 dark:bg-slate-800/80 text-gray-500 dark:text-gray-400 font-semibold text-xs uppercase tracking-wider">
+                                <tr>
+                                    <th class="px-5 py-4">NIS (Barcode)</th>
+                                    <th class="px-5 py-4">Nama Peserta Didik</th>
+                                    <th class="px-5 py-4 text-center">Kelas</th>
+                                    <th class="px-5 py-4 text-center">Status</th>
+                                    <th class="px-5 py-4 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="student-table-body" class="divide-y divide-gray-100 dark:divide-gray-700/50">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div
+                        class="p-4 border-t border-gray-100 dark:border-darkborder flex justify-between items-center text-sm bg-gray-50/50 dark:bg-slate-800/30">
+                        <span id="pagination-info" class="text-gray-500 font-medium">Data: 0</span>
+                        <div class="flex gap-2">
+                            <button onclick="changePage(-1)" id="btn-prev"
+                                class="px-4 py-2 border rounded-lg bg-white dark:bg-slate-700 hover:bg-gray-50 disabled:opacity-40 font-medium">Prev</button>
+                            <button onclick="changePage(1)" id="btn-next"
+                                class="px-4 py-2 border rounded-lg bg-white dark:bg-slate-700 hover:bg-gray-50 disabled:opacity-40 font-medium">Next</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: NILAI & AKADEMIK -->
+            <div id="view-nilai" class="view-section hidden animate-fade-in">
+                <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h2 class="text-3xl font-extrabold tracking-tight">Penilaian Akademik</h2>
+                        <p class="text-gray-500 dark:text-gray-400 mt-1">Sistem Buku Nilai (Gradebook) & Sikap</p>
+                    </div>
+                    <div class="relative dropdown-container">
+                        <button onclick="toggleDropdown('drop-nilai')"
+                            class="bg-gray-800 hover:bg-gray-900 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl shadow-lg font-bold flex items-center gap-2 transition-all">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                                </path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg> Opsi Menu
+                        </button>
+                        <div id="drop-nilai"
+                            class="hidden absolute right-0 mt-2 w-56 bg-white dark:bg-darkcard border border-gray-100 dark:border-darkborder rounded-xl shadow-2xl z-50 overflow-hidden text-sm">
+                            <button onclick="exportTemplateNilai()"
+                                class="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 font-bold flex items-center gap-2"><span
+                                    class="text-emerald-500">⬇️</span> Download Template</button>
+                            <label
+                                class="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 font-bold flex items-center gap-2 cursor-pointer border-b border-gray-100 dark:border-gray-700"
+                                onclick="cekMapelUpload(event)"><span class="text-amber-500">⬆️</span> Import Excel
+                                <input type="file" id="file-import-nilai" class="hidden" accept=".xlsx, .xls"
+                                    onchange="importExcelNilai(event)"></label>
+                            <button onclick="addMapelBaru()"
+                                class="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 text-indigo-600 font-bold flex items-center gap-2">📘
+                                Buat Mapel Baru</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    class="bg-white dark:bg-darkcard rounded-2xl shadow-sm border border-gray-100 dark:border-darkborder overflow-hidden">
+                    <div
+                        class="p-5 border-b border-gray-100 dark:border-darkborder bg-gradient-to-r from-gray-50 to-white dark:from-slate-800 dark:to-darkcard flex flex-col md:flex-row gap-4 items-end">
+                        <div class="w-full md:w-1/3">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Pilih
+                                Mata Pelajaran</label>
+                            <select id="filter-mapel" onchange="loadNilaiLengkap()"
+                                class="w-full p-3 border rounded-xl bg-white dark:bg-[#0f172a] font-bold text-blue-600 shadow-sm cursor-pointer">
+                                <option value="">-- Sedang Memuat Mapel --</option>
+                            </select>
+                        </div>
+                        <div class="w-full md:w-1/4">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Cari Nama
+                                / NIS</label>
+                            <input type="text" id="search-nilai" oninput="updateTableNilai()"
+                                placeholder="Ketik pencarian..."
+                                class="w-full p-3 border rounded-xl bg-white dark:bg-[#0f172a] shadow-sm">
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto relative min-h-[300px]">
+                        <table class="min-w-full text-left text-sm whitespace-nowrap">
+                            <thead
+                                class="bg-gray-100/80 dark:bg-slate-800/80 text-gray-500 dark:text-gray-400 font-bold text-[11px] uppercase tracking-wider">
+                                <tr>
+                                    <th
+                                        class="px-4 py-4 text-center sticky left-0 z-10 bg-gray-100/90 dark:bg-slate-800/90 shadow-[1px_0_0_0_#e5e7eb]">
+                                        Rank</th>
+                                    <th
+                                        class="px-4 py-4 sticky left-[60px] z-10 bg-gray-100/90 dark:bg-slate-800/90 shadow-[1px_0_0_0_#e5e7eb]">
+                                        Nama Lengkap</th>
+                                    <th class="px-3 py-4 text-center text-blue-600 dark:text-blue-400">TUGAS/LATIHAN
+                                    </th>
+                                    <th class="px-3 py-4 text-center text-rose-600 dark:text-rose-400">UJIAN</th>
+                                    <th class="px-4 py-4 text-center text-emerald-600 dark:text-emerald-400">Total Score
+                                    </th>
+                                    <th class="px-4 py-4 text-center text-amber-500">Sikap & Perilaku</th>
+                                </tr>
+                            </thead>
+                            <tbody id="nilai-table-body" class="divide-y divide-gray-100 dark:divide-gray-700/50">
+                                <tr>
+                                    <td colspan="6" class="py-20 text-center text-gray-400 font-medium">Silakan pilih
+                                        Mata Pelajaran di atas untuk memuat data.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div
+                        class="p-4 border-t border-gray-100 dark:border-darkborder flex justify-between items-center text-sm bg-gray-50/50 dark:bg-slate-800/30">
+                        <span id="page-info-nilai" class="text-gray-500 font-medium">Data: 0</span>
+                        <div class="flex gap-2">
+                            <button onclick="changePageNilai(-1)" id="prev-nilai"
+                                class="px-4 py-2 border rounded-lg bg-white dark:bg-slate-700 hover:bg-gray-50 disabled:opacity-40 font-medium">Prev</button>
+                            <button onclick="changePageNilai(1)" id="next-nilai"
+                                class="px-4 py-2 border rounded-lg bg-white dark:bg-slate-700 hover:bg-gray-50 disabled:opacity-40 font-medium">Next</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: SCAN PRESENSI -->
+            <div id="view-presensi" class="view-section hidden animate-fade-in">
+                <div class="mb-8">
+                    <h2 class="text-3xl font-extrabold tracking-tight">Kamera Presensi</h2>
+                    <p class="text-gray-500 dark:text-gray-400 mt-1">Arahkan kartu/barcode siswa ke layar untuk mencatat
+                        kehadiran</p>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <div
+                        class="bg-white dark:bg-darkcard p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-darkborder flex flex-col">
+                        <div id="reader"
+                            class="w-full bg-[#0f172a] rounded-xl overflow-hidden shadow-inner border border-gray-800 min-h-[300px] flex-1 flex items-center justify-center relative">
+                            <svg class="w-16 h-16 text-gray-600 animate-pulse absolute" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                    d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z">
+                                </path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                    d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="mt-6 flex gap-3">
+                            <button id="btn-start-scan" onclick="startScanner()"
+                                class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-xl shadow-lg active:scale-95 transition-all">AKTIFKAN
+                                KAMERA</button>
+                            <button id="btn-stop-scan" onclick="stopScanner()"
+                                class="hidden flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-4 rounded-xl shadow-lg active:scale-95 transition-all">MATIKAN
+                                KAMERA</button>
+                        </div>
+                    </div>
+                    <div
+                        class="bg-white dark:bg-darkcard p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-darkborder flex flex-col">
+                        <h3 class="font-bold text-lg mb-4 text-emerald-600 dark:text-emerald-400">Log Real-time Hadir
+                        </h3>
+                        <ul id="presensi-log" class="space-y-3 flex-1 overflow-y-auto pr-2 max-h-[350px]"></ul>
+                    </div>
+                </div>
+
+                <div
+                    class="bg-white dark:bg-darkcard rounded-2xl shadow-sm border border-gray-100 dark:border-darkborder overflow-hidden">
+                    <div class="p-5 border-b border-gray-100 dark:border-darkborder bg-gray-50/50 dark:bg-slate-800/30">
+                        <h3 class="font-bold text-lg text-rose-500">Daftar Belum Presensi Hari Ini</h3>
+                    </div>
+                    <div class="overflow-x-auto relative max-h-[400px]">
+                        <table class="min-w-full text-left text-sm whitespace-nowrap">
+                            <thead
+                                class="bg-gray-100/80 dark:bg-slate-800/80 text-gray-500 dark:text-gray-400 font-semibold text-xs uppercase tracking-wider sticky top-0 z-10">
+                                <tr>
+                                    <th class="px-5 py-4">NIS</th>
+                                    <th class="px-5 py-4">Nama Siswa</th>
+                                    <th class="px-5 py-4 text-center">Kelas</th>
+                                    <th class="px-5 py-4 text-center">Aksi Konfirmasi Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="absent-table-body" class="divide-y divide-gray-100 dark:divide-gray-700/50">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ================= MODAL & POPUP ================= -->
+
+    <div id="modal-detail-siswa"
+        class="hidden fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div id="modal-content-detail"
+            class="bg-white dark:bg-darkcard rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div
+                class="p-6 border-b border-gray-100 dark:border-darkborder flex justify-between items-center bg-blue-600 text-white">
+                <h3 class="text-xl font-bold flex items-center gap-2"><svg class="w-6 h-6" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2">
+                        </path>
+                    </svg> Profil Lengkap Siswa</h3>
+                <button onclick="closeModal('modal-detail-siswa')"
+                    class="text-white/70 hover:text-white font-bold text-2xl transition-colors">&times;</button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1 bg-gray-50 dark:bg-darkbg" id="detail-body-content"></div>
+            <div
+                class="p-5 border-t border-gray-100 dark:border-darkborder bg-white dark:bg-darkcard flex justify-end gap-3">
+                <button onclick="closeModal('modal-detail-siswa')"
+                    class="px-6 py-2.5 rounded-xl font-bold text-gray-500 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 transition-colors">Tutup</button>
+                <button id="btn-export-pdf"
+                    class="px-6 py-2.5 rounded-xl font-bold text-white bg-rose-500 hover:bg-rose-600 shadow-md transition-all flex items-center gap-2">Cetak
+                    Laporan (PDF)</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-barcode"
+        class="hidden fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div id="modal-content-barcode"
+            class="bg-white dark:bg-darkcard rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col text-center">
+            <div class="p-5 border-b border-gray-100 dark:border-darkborder flex justify-between items-center">
+                <h3 class="text-lg font-bold">Kartu Barcode</h3><button onclick="closeModal('modal-barcode')"
+                    class="text-gray-400 hover:text-red-500 font-bold text-2xl">&times;</button>
+            </div>
+            <div class="p-6">
+                <p class="mb-4 font-bold text-lg text-gray-900 dark:text-white" id="bc-nama"></p>
+                <div class="bg-white p-4 rounded-xl shadow-inner border mx-auto inline-block"><canvas
+                        id="barcode-canvas"></canvas></div>
+                <p class="mt-4 text-xs text-gray-500">Gunakan barcode ini untuk absensi otomatis.</p><button
+                    onclick="downloadBarcode()"
+                    class="w-full mt-6 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg active:scale-95 flex items-center justify-center gap-2">Download
+                    (PNG)</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-siswa"
+        class="hidden fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div id="modal-content"
+            class="bg-white dark:bg-darkcard rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-gray-100 dark:border-darkborder flex justify-between items-center">
+                <h3 id="modal-title" class="text-xl font-bold">Form Data</h3><button onclick="closeModal('modal-siswa')"
+                    class="text-gray-400 font-bold text-2xl">&times;</button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1">
+                <form id="form-siswa" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <input type="hidden" id="m-mode" value="add"><input type="hidden" id="m-nis-lama" value="">
+                    <div><label class="text-xs font-bold text-gray-500 uppercase mb-1 block">NIS *</label><input
+                            type="text" id="m-nis" required
+                            class="w-full p-3 border rounded-xl bg-gray-50 dark:bg-[#0f172a] outline-none focus:ring-2 focus:ring-blue-500"
+                            oninput="this.value=this.value.toUpperCase()"></div>
+                    <div><label class="text-xs font-bold text-gray-500 uppercase mb-1 block">Nama *</label><input
+                            type="text" id="m-nama" required
+                            class="w-full p-3 border rounded-xl bg-gray-50 dark:bg-[#0f172a] outline-none focus:ring-2 focus:ring-blue-500"
+                            oninput="this.value=this.value.toUpperCase()"></div>
+                    <div><label class="text-xs font-bold text-gray-500 uppercase mb-1 block">Jenis
+                            Kelamin</label><select id="m-kelamin"
+                            class="w-full p-3 border rounded-xl bg-gray-50 dark:bg-[#0f172a] outline-none">
+                            <option>LAKI-LAKI</option>
+                            <option>PEREMPUAN</option>
+                        </select></div>
+                    <div><label class="text-xs font-bold text-gray-500 uppercase mb-1 block">Agama</label><select
+                            id="m-agama" class="w-full p-3 border rounded-xl bg-gray-50 dark:bg-[#0f172a] outline-none">
+                            <option>ISLAM</option>
+                            <option>KRISTEN</option>
+                            <option>KATOLIK</option>
+                            <option>HINDU</option>
+                            <option>BUDDHA</option>
+                            <option>KONGHUCU</option>
+                        </select></div>
+                    <div><label class="text-xs font-bold text-gray-500 uppercase mb-1 block">Tempat Lahir</label><input
+                            type="text" id="m-tempat"
+                            class="w-full p-3 border rounded-xl bg-gray-50 dark:bg-[#0f172a] outline-none"
+                            oninput="this.value=this.value.toUpperCase()"></div>
+                    <div><label class="text-xs font-bold text-gray-500 uppercase mb-1 block">Tanggal Lahir</label><input
+                            type="date" id="m-tanggal"
+                            class="w-full p-3 border rounded-xl bg-gray-50 dark:bg-[#0f172a] outline-none"></div>
+                    <div><label class="text-xs font-bold text-gray-500 uppercase mb-1 block">Nama Ibu</label><input
+                            type="text" id="m-ibu"
+                            class="w-full p-3 border rounded-xl bg-gray-50 dark:bg-[#0f172a] outline-none"
+                            oninput="this.value=this.value.toUpperCase()"></div>
+                    <div><label class="text-xs font-bold text-gray-500 uppercase mb-1 block">Nama Ayah</label><input
+                            type="text" id="m-ayah"
+                            class="w-full p-3 border rounded-xl bg-gray-50 dark:bg-[#0f172a] outline-none"
+                            oninput="this.value=this.value.toUpperCase()"></div>
+                    <div><label class="text-xs font-bold text-gray-500 uppercase mb-1 block">Kelas *</label><input
+                            type="text" id="m-kelas" required
+                            class="w-full p-3 border rounded-xl bg-gray-50 dark:bg-[#0f172a] outline-none"
+                            oninput="this.value=this.value.toUpperCase()"></div>
+                    <div><label class="text-xs font-bold text-gray-500 uppercase mb-1 block">Status</label><select
+                            id="m-status"
+                            class="w-full p-3 border rounded-xl bg-gray-50 dark:bg-[#0f172a] outline-none">
+                            <option>AKTIF</option>
+                            <option>LULUS</option>
+                            <option>PINDAH</option>
+                        </select></div>
+                    <div class="md:col-span-2"><label
+                            class="text-xs font-bold text-gray-500 uppercase mb-1 block">Alamat</label><textarea
+                            id="m-alamat" rows="2"
+                            class="w-full p-3 border rounded-xl bg-gray-50 dark:bg-[#0f172a] outline-none"
+                            oninput="this.value=this.value.toUpperCase()"></textarea></div>
+                </form>
+            </div>
+            <div
+                class="p-5 border-t border-gray-100 dark:border-darkborder bg-gray-50/50 dark:bg-slate-800/30 flex justify-end gap-3">
+                <button onclick="closeModal('modal-siswa')"
+                    class="px-5 py-2.5 rounded-xl font-bold bg-white dark:bg-slate-700 border">Batal</button><button
+                    onclick="simpanSiswa()" id="btn-save-siswa"
+                    class="px-5 py-2.5 rounded-xl font-bold text-white bg-blue-600 shadow-md">Simpan Data</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-input-nilai"
+        class="hidden fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div id="modal-content-nilai"
+            class="bg-white dark:bg-darkcard rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col">
+            <div class="p-5 border-b border-gray-100 dark:border-darkborder">
+                <h3 class="text-lg font-bold" id="title-input-nilai">Input Nilai</h3>
+                <p id="desc-input-nilai" class="text-xs text-gray-500 mt-1"></p>
+            </div>
+            <div class="p-6">
+                <input type="hidden" id="in-nis"><input type="hidden" id="in-mapel"><input type="hidden"
+                    id="in-kategori">
+                <div class="text-center"><input type="number" id="in-score" min="0" max="100"
+                        onkeydown="if(event.key === 'Enter') { prosesSimpanNilai(); }"
+                        class="w-32 text-center text-4xl font-black p-4 border rounded-2xl bg-gray-50 dark:bg-[#0f172a] outline-none focus:ring-4 focus:ring-blue-500/50 text-blue-600"
+                        autofocus>
+                    <p class="text-xs font-bold text-gray-400 mt-3">Rentang: 0 - 100 (Tekan Enter)</p>
+                </div>
+            </div>
+            <div
+                class="p-4 border-t border-gray-100 dark:border-darkborder bg-gray-50/50 dark:bg-slate-800/30 flex gap-2">
+                <button onclick="closeModal('modal-input-nilai')"
+                    class="flex-1 py-3 rounded-xl font-bold bg-white dark:bg-slate-700 border">Batal</button><button
+                    onclick="prosesSimpanNilai()" id="btn-save-score"
+                    class="flex-1 py-3 rounded-xl font-bold text-white bg-blue-600 shadow-md">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-rating"
+        class="hidden fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div id="modal-content-rating"
+            class="bg-white dark:bg-darkcard rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col">
+            <div class="p-5 border-b border-gray-100 dark:border-darkborder">
+                <h3 class="text-lg font-bold">Evaluasi Sikap & Perilaku</h3>
+                <p id="desc-rating" class="text-xs text-gray-500 mt-1"></p>
+            </div>
+            <div class="p-6 text-center">
+                <input type="hidden" id="rt-nis">
+                <div class="star-rating mb-6"><input type="radio" id="star5" name="rating" value="5"><label for="star5"
+                        title="Sangat Baik">★</label><input type="radio" id="star4" name="rating" value="4"><label
+                        for="star4" title="Baik">★</label><input type="radio" id="star3" name="rating" value="3"><label
+                        for="star3" title="Cukup">★</label><input type="radio" id="star2" name="rating" value="2"><label
+                        for="star2" title="Kurang">★</label><input type="radio" id="star1" name="rating"
+                        value="1"><label for="star1" title="Sangat Kurang">★</label></div>
+                <textarea id="rt-komen" rows="3" placeholder="Tuliskan catatan khusus..."
+                    class="w-full p-4 border rounded-xl bg-gray-50 dark:bg-[#0f172a] outline-none focus:ring-2 focus:ring-amber-500 text-sm resize-none"></textarea>
+            </div>
+            <div
+                class="p-4 border-t border-gray-100 dark:border-darkborder bg-gray-50/50 dark:bg-slate-800/30 flex gap-2">
+                <button onclick="closeModal('modal-rating')"
+                    class="flex-1 py-3 rounded-xl font-bold bg-white dark:bg-slate-700 border">Batal</button><button
+                    onclick="prosesSimpanRating()" id="btn-save-rating"
+                    class="flex-1 py-3 rounded-xl font-bold text-white bg-amber-500 hover:bg-amber-600 shadow-md">Simpan
+                    Evaluasi</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= SCRIPTS ================= -->
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbxcY82EOE7yMML2lL9mGv9OPzZnCNwg6RWdZ5BlxwYiiwr01TEQbfoCwdM0lXfjevJAmg/exec";
+
+        const ToastTop = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true });
+        const ToastBottom = Swal.mixin({ toast: true, position: 'bottom-end', showConfirmButton: false, timer: 2000 });
+        const loadingSVG = `<div class="loader-container"><svg class="loader-spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><p class="text-gray-500 font-medium animate-pulse">Memuat data...</p></div>`;
+
+        let chart1 = null, chart2 = null;
+        let dashTableMentah = [], dashTableFilter = [], curDash = 1, rowDash = 10;
+        let dataSiswaMentah = [], dataSiswaFilter = [], curSiswa = 1, rowSiswa = 10;
+        let dataNilaiMentah = [], dataNilaiFilter = [], curNilai = 1, rowNilai = 10;
+        let html5QrCode = null, isScanning = false, lastScanData = "", lastScanTime = 0, currentBarcode = { nis: "", nama: "" };
+
+        async function apiGet(action) { try { const res = await fetch(`${API_URL}?action=${action}`); return await res.json(); } catch (e) { return { success: false, message: e.toString() }; } }
+        async function apiPost(action, data) { try { const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: action, data: data }) }); return await res.json(); } catch (e) { return { success: false, message: e.toString() }; } }
+
+        function toggleTheme() { document.documentElement.classList.toggle('dark'); }
+        function isDarkMode() { return document.documentElement.classList.contains('dark'); }
+        function toggleSidebar() { const sb = document.getElementById('sidebar'); if (sb.classList.contains('-ml-[18rem]')) sb.classList.remove('-ml-[18rem]'); else sb.classList.add('-ml-[18rem]'); }
+
+        function toggleDropdown(id) { document.querySelectorAll('.dropdown-container > div').forEach(el => { if (el.id !== id) el.classList.add('hidden'); }); document.getElementById(id).classList.toggle('hidden'); }
+        function closeAllDropdowns(e) { if (!e.target.closest('.dropdown-container')) { document.querySelectorAll('.dropdown-container > div').forEach(el => el.classList.add('hidden')); } }
+
+        function navigate(view, btn) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById('view-' + view).classList.remove('hidden');
+            if (btn) { document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('bg-gray-100', 'dark:bg-slate-800', 'font-bold')); btn.classList.add('bg-gray-100', 'dark:bg-slate-800', 'font-bold'); }
+            document.getElementById('header-title').innerText = view.toUpperCase();
+            if (window.innerWidth < 768) document.getElementById('sidebar').classList.add('-ml-[18rem]');
+            if (view !== 'presensi' && isScanning) stopScanner();
+
+            if (view === 'dashboard') initDashboard();
+            if (view === 'siswa') initSiswa();
+            if (view === 'nilai') initNilai();
+            if (view === 'presensi') initPresensi();
+        }
+
+        function prosesLogin() {
+            const u = document.getElementById('input-username').value, p = document.getElementById('input-password').value, b = document.getElementById('btn-login');
+            b.disabled = true; b.innerHTML = '<svg class="animate-spin h-5 w-5 mr-2 text-white inline" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> MEMPROSES...';
+            apiPost('verifyLogin', { username: u, password: p }).then(res => {
+                b.disabled = false; b.innerHTML = '<span class="tracking-wide">MASUK SISTEM</span>';
+                if (res.success) { document.getElementById('view-login').classList.add('hidden'); document.getElementById('app-layout').classList.remove('hidden'); ToastTop.fire({ icon: 'success', title: `Selamat datang kembali!` }); navigate('dashboard', document.getElementById('nav-dash')); }
+                else Swal.fire({ icon: 'error', title: 'Login Ditolak', text: res.message });
+            });
+        }
+        function confirmLogout() { document.getElementById('app-layout').classList.add('hidden'); document.getElementById('view-login').classList.remove('hidden'); document.getElementById('input-password').value = ''; }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        function showModal(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).querySelector('div').classList.add('animate-fade-in'); }
+
+        // --- DASHBOARD ---
+        function initDashboard() {
+            document.getElementById('dash-loading').classList.remove('hidden'); document.getElementById('dash-content').classList.add('hidden');
+            apiGet('getDashboardData').then(res => {
+                document.getElementById('dash-loading').classList.add('hidden'); document.getElementById('dash-content').classList.remove('hidden');
+                if (!res.success) return;
+
+                dashTableMentah = res.data.table;
+                document.getElementById('dash-total').innerText = res.data.cards.totalSiswa;
+                document.getElementById('dash-hadir').innerText = res.data.cards.hadirHariIni;
+
+                let p = parseFloat(res.data.cards.persenHadir);
+                let elPersen = document.getElementById('dash-persen'); elPersen.innerText = p + '%';
+                if (p < 95) { elPersen.classList.remove('text-gray-900', 'dark:text-white'); elPersen.classList.add('text-rose-500'); }
+                else { elPersen.classList.add('text-gray-900', 'dark:text-white'); elPersen.classList.remove('text-rose-500'); }
+
+                if (chart1) chart1.destroy(); if (chart2) chart2.destroy(); Chart.defaults.color = isDarkMode() ? '#94a3b8' : '#64748b'; Chart.defaults.font.family = "'Montserrat', sans-serif";
+                const c1 = document.getElementById('lineChart').getContext('2d'); chart1 = new Chart(c1, { type: 'line', data: { labels: res.data.charts.line.labels, datasets: [{ label: 'Rata-rata', data: res.data.charts.line.data, borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.1)', borderWidth: 3, tension: 0.4, fill: true, pointBackgroundColor: '#6366f1', pointRadius: 4, pointHoverRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function (context) { let label = context.dataset.label || ''; if (label) label += ': '; if (context.parsed.y !== null) label += context.parsed.y; let count = res.data.charts.line.counts[context.dataIndex]; return [label, `Total Siswa: ${count} orang`]; } } } } } });
+                const c2 = document.getElementById('donutChart').getContext('2d'); chart2 = new Chart(c2, { type: 'doughnut', data: { labels: res.data.charts.donut.labels, datasets: [{ data: res.data.charts.donut.data, backgroundColor: ['#10b981', '#f43f5e'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '75%', interaction: { mode: 'index', intersect: false }, plugins: { legend: { position: 'bottom' } } } });
+                updateTableDash();
+            });
+        }
+
+        function updateTableDash() {
+            const q = document.getElementById('search-dash').value.toLowerCase(); rowDash = parseInt(document.getElementById('rows-dash').value);
+            dashTableFilter = dashTableMentah.filter(s => s.nis.toString().toLowerCase().includes(q) || s.nama.toLowerCase().includes(q));
+            curDash = 1; renderTableDash();
+        }
+
+        function renderTableDash() {
+            const tb = document.getElementById('dash-table-body'); tb.innerHTML = '';
+            if (dashTableFilter.length === 0) return tb.innerHTML = '<tr><td colspan="6" class="py-10 text-center text-gray-500 font-medium">Data tidak ditemukan.</td></tr>';
+            let s = (curDash - 1) * rowDash; let e = s + rowDash;
+            dashTableFilter.slice(s, e).forEach(d => {
+                let st = ''; for (let i = 0; i < 5; i++) st += (i < d.rating) ? '<span class="text-amber-400">★</span>' : '<span class="text-gray-300 dark:text-gray-600">★</span>';
+                let avgClass = d.rataNilai >= 75 ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' : 'text-rose-600 bg-rose-50 dark:bg-rose-900/20';
+                tb.innerHTML += `<tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50"><td class="px-5 py-4"><p class="font-bold">${d.nama}</p><p class="text-xs text-gray-400">NIS: ${d.nis}</p></td><td class="px-5 py-4 text-center font-bold text-gray-500">${d.jamAkhirHariIni}</td><td class="px-5 py-4 text-center font-bold">${d.totalHadir} Hari</td><td class="px-5 py-4 text-center"><span class="px-2.5 py-1 rounded-lg font-bold ${avgClass}">${d.rataNilai}</span></td><td class="px-5 py-4 text-center text-lg">${st}</td><td class="px-5 py-4 text-center"><button onclick="bukaDetailSiswa('${d.nis}')" class="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 text-blue-600 font-bold rounded-lg text-xs transition-colors">Lihat Profil</button></td></tr>`;
+            });
+            document.getElementById('page-info-dash').innerText = `Data: ${s + 1} - ${Math.min(e, dashTableFilter.length)} dari ${dashTableFilter.length}`;
+            document.getElementById('prev-dash').disabled = curDash === 1; document.getElementById('next-dash').disabled = curDash === Math.ceil(dashTableFilter.length / rowDash) || dashTableFilter.length === 0;
+        }
+        function changePageDash(d) { curDash += d; renderTableDash(); }
+
+        function bukaDetailSiswa(nis) {
+            let d = dashTableMentah.find(x => x.nis == nis); if (!d) return;
+            let st = ''; for (let i = 0; i < 5; i++) st += (i < d.rating) ? '<span class="text-amber-400">★</span>' : '<span class="text-gray-300 dark:text-gray-600">★</span>';
+            document.getElementById('detail-body-content').innerHTML = `
+        <div class="flex flex-col md:flex-row gap-6 mb-6">
+          <div class="w-24 h-24 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-500 flex items-center justify-center text-white text-3xl font-black shadow-lg mx-auto md:mx-0 shrink-0">${d.nama.charAt(0)}</div>
+          <div class="text-center md:text-left flex-1"><h2 class="text-2xl font-black text-gray-900 dark:text-white">${d.nama}</h2><p class="text-blue-600 dark:text-blue-400 font-bold mt-1">NIS: ${d.nis} <span class="text-gray-300 mx-2">|</span> Kelas: ${d.kelas}</p><div class="mt-4 flex flex-wrap justify-center md:justify-start gap-2"><span class="px-3 py-1 rounded-full text-xs font-bold ${d.status === 'AKTIF' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">${d.status}</span><span class="px-3 py-1 bg-gray-200 dark:bg-slate-700 rounded-full text-xs font-bold">${d.kelamin}</span></div></div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div class="bg-white dark:bg-darkcard p-4 rounded-xl shadow-sm border border-gray-100 dark:border-darkborder"><p class="text-xs text-gray-500 font-bold uppercase mb-1">Rata-rata Akademik</p><p class="text-2xl font-black ${d.rataNilai >= 75 ? 'text-emerald-600' : 'text-rose-600'}">${d.rataNilai}</p></div>
+          <div class="bg-white dark:bg-darkcard p-4 rounded-xl shadow-sm border border-gray-100 dark:border-darkborder"><p class="text-xs text-gray-500 font-bold uppercase mb-1">Evaluasi Sikap</p><p class="text-2xl">${st}</p><p class="text-xs text-gray-500 mt-1 italic">"${d.komentar}"</p></div>
+        </div>
+        <div class="bg-white dark:bg-darkcard rounded-xl shadow-sm border border-gray-100 dark:border-darkborder overflow-hidden">
+          <div class="p-4 bg-gray-50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-darkborder font-bold">Biodata Diri</div>
+          <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-6 text-sm">
+            <div><p class="text-gray-400 text-xs">Tempat, Tanggal Lahir</p><p class="font-semibold">${d.tempatLahir}, ${d.tanggalLahir.substring(0, 10)}</p></div>
+            <div><p class="text-gray-400 text-xs">Agama</p><p class="font-semibold">${d.agama}</p></div>
+            <div><p class="text-gray-400 text-xs">Nama Ayah</p><p class="font-semibold">${d.namaAyah}</p></div>
+            <div><p class="text-gray-400 text-xs">Nama Ibu</p><p class="font-semibold">${d.namaIbu}</p></div>
+            <div class="md:col-span-2"><p class="text-gray-400 text-xs">Alamat Lengkap</p><p class="font-semibold">${d.alamat}</p></div>
+          </div>
+        </div>`;
+            document.getElementById('btn-export-pdf').onclick = function () { cetakPDF(nis); }; showModal('modal-detail-siswa');
+        }
+
+        function cetakPDF(nis) {
+            let d = dashTableMentah.find(x => x.nis == nis); if (!d) return;
+            let btn = document.getElementById('btn-export-pdf'); let oriText = btn.innerHTML;
+            btn.innerHTML = `<svg class="animate-spin h-5 w-5 mr-2 text-white inline" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Memproses...`; btn.disabled = true;
+
+            apiGet('getSiswaDetail&nis=' + nis).then(res => {
+                btn.innerHTML = oriText; btn.disabled = false;
+                let detailNilai = res.success ? res.data : []; let st = ''; for (let i = 0; i < 5; i++) st += (i < d.rating) ? '★' : '☆';
+                let trs = '';
+                detailNilai.forEach(n => {
+                    trs += `<tr style="border-bottom: 1px solid #ddd;">
+             <td style="padding:10px;">${n.mapel}</td><td style="padding:10px;text-align:center;">${n.l1}</td><td style="padding:10px;text-align:center;">${n.l2}</td><td style="padding:10px;text-align:center;">${n.l3}</td><td style="padding:10px;text-align:center;">${n.l4}</td><td style="padding:10px;text-align:center;">${n.l5}</td><td style="padding:10px;text-align:center;"><b>${n.uts}</b></td><td style="padding:10px;text-align:center;"><b>${n.uas}</b></td><td style="padding:10px;text-align:center;font-weight:bold;color:#10b981;">${n.rata}</td>
+           </tr>`;
+                });
+                let htmlPrint = `
+         <div style="font-family: 'Montserrat', sans-serif; padding: 40px; color: #000; background: #fff;">
+            <div style="text-align:center; border-bottom: 3px solid #000; padding-bottom: 20px; margin-bottom: 30px;"><h1 style="margin:0; font-size: 24px;">LAPORAN HASIL EVALUASI BELAJAR</h1><h2 style="margin:5px 0 0 0; font-size: 18px; color: #555;">Sistem Informasi EduManage</h2></div>
+            <h3 style="background:#f3f4f6; padding:10px; border-left: 5px solid #3b82f6;">A. IDENTITAS PESERTA DIDIK</h3>
+            <table style="width:100%; margin-bottom: 30px; font-size: 14px;" cellpadding="5">
+              <tr><td width="25%">Nama Lengkap</td><td width="2%">:</td><td><b>${d.nama}</b></td></tr><tr><td>NIS</td><td>:</td><td>${d.nis}</td></tr><tr><td>Kelas</td><td>:</td><td>${d.kelas}</td></tr><tr><td>Jenis Kelamin</td><td>:</td><td>${d.kelamin}</td></tr><tr><td>Tempat, Tgl Lahir</td><td>:</td><td>${d.tempatLahir}, ${d.tanggalLahir.substring(0, 10)}</td></tr><tr><td>Nama Orang Tua</td><td>:</td><td>Ayah: ${d.namaAyah} / Ibu: ${d.namaIbu}</td></tr><tr><td>Alamat</td><td>:</td><td>${d.alamat}</td></tr>
+            </table>
+            <h3 style="background:#f3f4f6; padding:10px; border-left: 5px solid #10b981;">B. RINGKASAN AKADEMIK & SIKAP</h3>
+            <table style="width:100%; font-size: 14px; border-collapse: collapse;" border="1" cellpadding="10">
+              <tr style="background:#f9fafb;"><th width="33%">Rata-Rata Kelas</th><th width="33%">Total Kehadiran</th><th width="34%">Status Peserta</th></tr>
+              <tr style="text-align:center;"><td style="font-size:20px; font-weight:bold;">${d.rataNilai}</td><td style="font-size:20px; font-weight:bold;">${d.totalHadir} Hari</td><td style="font-size:16px; font-weight:bold;">${d.status}</td></tr>
+            </table>
+            <div style="margin-top: 20px; border: 1px solid #ddd; padding: 15px; border-radius: 8px;"><p style="margin:0 0 5px 0; font-weight:bold;">Evaluasi Perilaku & Karakter (Sikap): <span style="color:#fbbf24; font-size:20px;">${st}</span></p><p style="margin:0; font-style:italic;">Catatan Wali Kelas: "${d.komentar}"</p></div>
+            <div style="page-break-before: always;"></div>
+            <div style="text-align:center; border-bottom: 3px solid #000; padding-bottom: 20px; margin-bottom: 30px;"><h1 style="margin:0; font-size: 20px;">LAMPIRAN: RINCIAN NILAI MATA PELAJARAN</h1><p style="margin:5px 0 0 0;">Nama: <b>${d.nama}</b> | NIS: ${d.nis}</p></div>
+            <table style="width:100%; border-collapse: collapse; font-size: 12px; margin-bottom:30px;" border="1">
+               <tr style="background:#f3f4f6; text-align:center;"><th style="padding:10px;">MATA PELAJARAN</th><th style="padding:10px;">L1</th><th style="padding:10px;">L2</th><th style="padding:10px;">L3</th><th style="padding:10px;">L4</th><th style="padding:10px;">L5</th><th style="padding:10px;">UTS</th><th style="padding:10px;">UAS</th><th style="padding:10px;">RATA</th></tr>
+               ${trs || '<tr><td colspan="9" style="text-align:center; padding: 20px;">Belum ada data nilai akademik.</td></tr>'}
+            </table>
+            <table style="width:100%; margin-top:50px;"><tr><td width="70%"></td><td width="30%" style="text-align:center;"><p>Batam, ${new Date().toLocaleDateString('id-ID')}</p><p>Mengetahui,</p><br><br><br><br><p style="text-decoration:underline; font-weight:bold;">Wali Kelas / Admin</p></td></tr></table>
+         </div>`;
+                let opt = { margin: 0, filename: `Raport_${d.nis}_${d.nama}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'A4', orientation: 'portrait' } };
+                html2pdf().set(opt).from(htmlPrint).save().then(() => { ToastBottom.fire({ icon: 'success', title: 'PDF Berhasil Diunduh' }); });
+            });
+        }
+
+        // --- SISWA ---
+        function initSiswa() {
+            document.getElementById('student-table-body').innerHTML = `<tr><td colspan="5">${loadingSVG}</td></tr>`;
+            apiGet('getStudents').then(res => { if (res.success) { dataSiswaMentah = res.data; updateTableState(); } });
+        }
+        function updateTableState() {
+            const q = document.getElementById('search-siswa').value.toLowerCase(); rowSiswa = parseInt(document.getElementById('rows-per-page').value);
+            dataSiswaFilter = dataSiswaMentah.filter(s => s.nis.toString().toLowerCase().includes(q) || s.nama.toLowerCase().includes(q) || s.kelas.toLowerCase().includes(q)); curSiswa = 1; renderTableSiswa();
+        }
+        function renderTableSiswa() {
+            const tb = document.getElementById('student-table-body'); tb.innerHTML = '';
+            if (dataSiswaFilter.length === 0) return tb.innerHTML = '<tr><td colspan="5" class="py-10 text-center text-gray-500 font-medium">Data tidak ditemukan.</td></tr>';
+            let s = (curSiswa - 1) * rowSiswa; let e = s + rowSiswa;
+            dataSiswaFilter.slice(s, e).forEach(d => {
+                let stClass = d.status === 'AKTIF' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700';
+                tb.innerHTML += `<tr class="hover:bg-gray-50 dark:hover:bg-slate-800/30"><td class="px-5 py-4 font-medium"><button onclick="bukaBarcode('${d.nis}', '${d.nama}')" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 font-bold flex items-center gap-1.5 transition-colors group"><svg class="w-5 h-5 opacity-70 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h2v16H3V4zm4 0h1v16H7V4zm3 0h3v16h-3V4zm5 0h1v16h-1V4zm3 0h3v16h-3V4z"></path></svg>${d.nis}</button></td><td class="px-5 py-4 font-bold">${d.nama}</td><td class="px-5 py-4 text-center"><span class="bg-gray-100 dark:bg-slate-700 px-3 py-1 rounded-lg text-xs font-bold">${d.kelas}</span></td><td class="px-5 py-4 text-center"><span class="px-3 py-1 rounded-full text-[10px] font-bold ${stClass}">${d.status}</span></td><td class="px-5 py-4 text-center"><button onclick="openModalSiswa('edit', '${d.nis}')" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-xs font-bold mr-1">Edit</button><button onclick="hapusSiswa('${d.nis}', '${d.nama}')" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-xs font-bold">Hapus</button></td></tr>`;
+            });
+            document.getElementById('pagination-info').innerText = `Data: ${s + 1} - ${Math.min(e, dataSiswaFilter.length)} dari ${dataSiswaFilter.length}`;
+            document.getElementById('btn-prev').disabled = curSiswa === 1; document.getElementById('btn-next').disabled = curSiswa === Math.ceil(dataSiswaFilter.length / rowSiswa) || dataSiswaFilter.length === 0;
+        }
+        function changePage(d) { curSiswa += d; renderTableSiswa(); }
+        function exportTemplateSiswa() {
+            const ws_data = [["NIS", "Nama", "Kelamin", "Agama", "TempatLahir", "TanggalLahir", "NamaIbu", "NamaAyah", "Kelas", "Status", "Alamat"], ["1001", "Budi Santoso", "LAKI-LAKI", "ISLAM", "Batam", "2005-01-13", "Siti", "Haryanto", "X-RPL 1", "AKTIF", "Jl. Mawar No. 1"]];
+            const ws = XLSX.utils.aoa_to_sheet(ws_data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Template_Siswa"); XLSX.writeFile(wb, "Template_Siswa.xlsx");
+        }
+        function importExcelSiswa(e) {
+            const file = e.target.files[0]; if (!file) return;
+            Swal.fire({ title: 'Membaca file...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                    const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                    let payload = jsonData.map(r => ({ nis: r.NIS || "", nama: r.Nama || "", kelamin: r.Kelamin || "", agama: r.Agama || "", tempatLahir: r.TempatLahir || "", tanggalLahir: r.TanggalLahir || "", namaIbu: r.NamaIbu || "", namaAyah: r.NamaAyah || "", kelas: r.Kelas || "", status: r.Status || "AKTIF", alamat: r.Alamat || "" }));
+                    if (payload.length === 0) return Swal.fire('Error', 'Excel kosong atau format salah', 'error');
+                    Swal.fire({ title: 'Mengimpor Data...', text: 'Sedang mengirim ke database...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                    apiPost('importStudents', payload).then(res => { document.getElementById('file-import').value = ""; if (res.success) { Swal.fire('Selesai!', res.message, 'success'); initSiswa(); } else Swal.fire('Gagal Import', res.message, 'error'); });
+                } catch (error) { Swal.fire('Error', 'Gagal memproses file.', 'error'); }
+            }; reader.readAsArrayBuffer(file);
+        }
+        function bukaBarcode(nis, nama) { currentBarcode = { nis: nis, nama: nama }; document.getElementById('bc-nama').innerText = nama; showModal('modal-barcode'); JsBarcode("#barcode-canvas", nis, { format: "CODE128", lineColor: "#000", width: 2, height: 80, displayValue: true, fontSize: 16, background: "#ffffff" }); }
+        function downloadBarcode() { const url = document.getElementById('barcode-canvas').toDataURL("image/png"); const a = document.createElement('a'); a.href = url; a.download = `${currentBarcode.nis}-${currentBarcode.nama}.png`; document.body.appendChild(a); a.click(); document.body.removeChild(a); ToastBottom.fire({ icon: 'success', title: 'Barcode diunduh' }); }
+        function openModalSiswa(mode, nis) {
+            document.getElementById('form-siswa').reset(); document.getElementById('m-mode').value = mode; document.getElementById('modal-title').innerText = mode === 'add' ? 'Tambah Data Siswa' : 'Edit Data Siswa';
+            if (mode === 'edit') {
+                let d = dataSiswaMentah.find(x => x.nis == nis); document.getElementById('m-nis-lama').value = d.nis; document.getElementById('m-nis').value = d.nis; document.getElementById('m-nama').value = d.nama; document.getElementById('m-kelamin').value = d.kelamin; document.getElementById('m-agama').value = d.agama; document.getElementById('m-tempat').value = d.tempatLahir;
+                try { let t = d.tanggalLahir; if (t.includes('/')) { let p = t.split('/'); t = `${p[2]}-${p[1]}-${p[0]}`; } document.getElementById('m-tanggal').value = t.substring(0, 10); } catch (e) { }
+                document.getElementById('m-ibu').value = d.namaIbu; document.getElementById('m-ayah').value = d.namaAyah; document.getElementById('m-kelas').value = d.kelas; document.getElementById('m-status').value = d.status; document.getElementById('m-alamat').value = d.alamat;
+            } showModal('modal-siswa');
+        }
+        function simpanSiswa() {
+            let d = { nis: document.getElementById('m-nis').value, nama: document.getElementById('m-nama').value, kelamin: document.getElementById('m-kelamin').value, agama: document.getElementById('m-agama').value, tempatLahir: document.getElementById('m-tempat').value, tanggalLahir: document.getElementById('m-tanggal').value, namaIbu: document.getElementById('m-ibu').value, namaAyah: document.getElementById('m-ayah').value, kelas: document.getElementById('m-kelas').value, status: document.getElementById('m-status').value, alamat: document.getElementById('m-alamat').value };
+            let mode = document.getElementById('m-mode').value; if (mode === 'edit') d.nisLama = document.getElementById('m-nis-lama').value;
+            let b = document.getElementById('btn-save-siswa'); b.innerText = 'Menyimpan...'; b.disabled = true;
+            apiPost(mode === 'add' ? 'addStudent' : 'updateStudent', d).then(res => { b.innerText = 'Simpan Data'; b.disabled = false; if (res.success) { closeModal('modal-siswa'); ToastBottom.fire({ icon: 'success', title: 'Tersimpan!' }); initSiswa(); } else Swal.fire('Gagal', res.message, 'error'); });
+        }
+        function hapusSiswa(nis, nama) { Swal.fire({ title: 'Hapus Data?', text: `Hapus permanen ${nama}?`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Ya, Hapus' }).then(r => { if (r.isConfirmed) apiPost('deleteStudent', { nis: nis }).then(res => { if (res.success) { ToastBottom.fire({ icon: 'success', title: 'Terhapus' }); initSiswa(); } }); }); }
+
+        // --- NILAI & AKADEMIK ---
+        function initNilai() {
+            let sel = document.getElementById('filter-mapel'); sel.innerHTML = '<option value="">Sedang memuat...</option>';
+            apiGet('getMapelData').then(res => { if (res.success) { sel.innerHTML = '<option value="">-- PILIH MATA PELAJARAN --</option>'; res.data.forEach(m => sel.innerHTML += `<option value="${m}">${m}</option>`); } });
+        }
+        function addMapelBaru() { Swal.fire({ title: 'Mata Pelajaran Baru', input: 'text', inputPlaceholder: 'Contoh: FISIKA', showCancelButton: true, confirmButtonText: 'Simpan' }).then(r => { if (r.isConfirmed && r.value) { apiPost('addMapel', { mapel: r.value }).then(res => { if (res.success) { ToastBottom.fire({ icon: 'success', title: 'Mapel ditambahkan' }); initNilai(); } }); } }); }
+        function loadNilaiLengkap() {
+            let mapel = document.getElementById('filter-mapel').value; if (!mapel) return document.getElementById('nilai-table-body').innerHTML = '<tr><td colspan="6" class="py-20 text-center text-gray-500 font-medium">Silakan pilih Mapel.</td></tr>';
+            document.getElementById('nilai-table-body').innerHTML = `<tr><td colspan="6">${loadingSVG}</td></tr>`;
+            apiGet(`getNilaiLengkap&mapel=${mapel}`).then(res => { if (res.success) { dataNilaiMentah = res.data; updateTableNilai(); } });
+        }
+        function updateTableNilai() {
+            const q = document.getElementById('search-nilai').value.toLowerCase();
+            dataNilaiFilter = dataNilaiMentah.filter(s => s.nama.toLowerCase().includes(q) || s.nis.toString().toLowerCase().includes(q)); curNilai = 1; renderTableNilai();
+        }
+        function renderTableNilai() {
+            const tb = document.getElementById('nilai-table-body'); tb.innerHTML = '';
+            if (dataNilaiFilter.length === 0) return tb.innerHTML = '<tr><td colspan="6" class="py-10 text-center text-gray-500 font-medium">Data tidak ditemukan.</td></tr>';
+            let s = (curNilai - 1) * 10; let e = s + 10;
+            dataNilaiFilter.slice(s, e).forEach(d => {
+                let st = ''; for (let i = 1; i <= 5; i++) st += i <= d.rating ? '★' : '☆';
+                let bgClass = d.peringkat <= 3 ? 'bg-amber-50 dark:bg-amber-900/10' : 'hover:bg-gray-50 dark:hover:bg-slate-800/30';
+                let rankColor = d.peringkat == 1 ? 'text-amber-500 text-xl font-black' : d.peringkat == 2 ? 'text-gray-400 text-lg font-bold' : d.peringkat == 3 ? 'text-amber-700 text-lg font-bold' : 'text-gray-500 font-semibold';
+                let btnStr = (kategori, nilai) => `<button onclick="bukaInputNilai('${d.nis}','${d.nama}','${kategori}','${nilai}')" class="px-2 py-1 mx-0.5 rounded border ${nilai > 0 ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-dashed border-gray-300 text-gray-400 hover:border-blue-400'} font-bold">${nilai > 0 ? nilai : '+'}</button>`;
+                let btnTugas = btnStr('LATIHAN 1', d.l1) + btnStr('LATIHAN 2', d.l2) + btnStr('LATIHAN 3', d.l3) + btnStr('LATIHAN 4', d.l4) + btnStr('LATIHAN 5', d.l5);
+                let btnUjian = btnStr('UTS', d.uts) + btnStr('UAS', d.uas);
+                tb.innerHTML += `<tr class="${bgClass} transition-colors group"><td class="px-4 py-4 text-center sticky left-0 z-10 ${d.peringkat <= 3 ? 'bg-amber-50 dark:bg-amber-900/10' : 'bg-white dark:bg-darkcard group-hover:bg-gray-50 dark:group-hover:bg-slate-800/30'} shadow-[1px_0_0_0_#e5e7eb] dark:shadow-[1px_0_0_0_#334155]"><span class="${rankColor}">#${d.peringkat}</span></td><td class="px-4 py-4 sticky left-[60px] z-10 ${d.peringkat <= 3 ? 'bg-amber-50 dark:bg-amber-900/10' : 'bg-white dark:bg-darkcard group-hover:bg-gray-50 dark:group-hover:bg-slate-800/30'} shadow-[1px_0_0_0_#e5e7eb] dark:shadow-[1px_0_0_0_#334155]"><p class="font-bold text-gray-900 dark:text-white truncate max-w-[150px]">${d.nama}</p><p class="text-xs text-gray-500">${d.nis}</p></td><td class="px-3 py-4 text-center flex-nowrap">${btnTugas}</td><td class="px-3 py-4 text-center border-l border-r border-gray-100 dark:border-gray-800/50">${btnUjian}</td><td class="px-4 py-4 text-center"><span class="text-lg font-black text-emerald-600 dark:text-emerald-400">${d.total}</span></td><td class="px-4 py-4 text-center"><button onclick="bukaRating('${d.nis}','${d.nama}','${d.rating}','${d.komentar.replace(/'/g, "\\'")}')" class="px-3 py-1.5 rounded-lg border border-amber-200 bg-amber-50 text-amber-500 font-bold">${d.rating > 0 ? st : '⭐ Evaluasi'}</button></td></tr>`;
+            });
+            document.getElementById('page-info-nilai').innerText = `Menampilkan ${s + 1}-${Math.min(e, dataNilaiFilter.length)} dari ${dataNilaiFilter.length}`;
+            document.getElementById('prev-nilai').disabled = curNilai === 1; document.getElementById('next-nilai').disabled = curNilai === Math.ceil(dataNilaiFilter.length / 10) || dataNilaiFilter.length === 0;
+        }
+        function changePageNilai(d) { curNilai += d; renderTableNilai(); }
+
+        function exportTemplateNilai() {
+            let mapel = document.getElementById('filter-mapel').value;
+            if (!mapel) return Swal.fire({ icon: 'warning', title: 'Pilih Mapel', text: 'Pilih mata pelajaran dulu sebelum mengunduh format excel!' });
+            let ws_data = [["NIS", "Nama", "Mata_Pelajaran", "Latihan_1", "Latihan_2", "Latihan_3", "UTS", "Latihan_4", "Latihan_5", "UAS", "Rating_Bintang", "Komentar"]];
+            dataNilaiMentah.forEach(d => { ws_data.push([d.nis, d.nama, d.mapel, d.l1, d.l2, d.l3, d.uts, d.l4, d.l5, d.uas, d.rating, d.komentar]); });
+            const ws = XLSX.utils.aoa_to_sheet(ws_data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Nilai_" + mapel); XLSX.writeFile(wb, "Template_Nilai_" + mapel + ".xlsx");
+        }
+        function cekMapelUpload(e) {
+            let mapel = document.getElementById('filter-mapel').value;
+            if (!mapel) { e.preventDefault(); Swal.fire({ icon: 'warning', title: 'Pilih Mapel', text: 'Pilih mata pelajaran terlebih dahulu!' }); }
+        }
+        function importExcelNilai(e) {
+            const file = e.target.files[0]; if (!file) return;
+            Swal.fire({ title: 'Membaca file...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                    const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                    let payload = jsonData.map(r => ({ nis: r.NIS, mapel: r.Mata_Pelajaran, l1: r.Latihan_1 || 0, l2: r.Latihan_2 || 0, l3: r.Latihan_3 || 0, uts: r.UTS || 0, l4: r.Latihan_4 || 0, l5: r.Latihan_5 || 0, uas: r.UAS || 0, rating: r.Rating_Bintang || 0, komentar: r.Komentar || "" }));
+                    if (payload.length === 0) return Swal.fire('Error', 'Excel kosong', 'error');
+                    Swal.fire({ title: 'Mengimpor Data...', text: 'Memproses ratusan nilai...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                    apiPost('importNilai', payload).then(res => { document.getElementById('file-import-nilai').value = ""; if (res.success) { Swal.fire('Sukses!', res.message, 'success'); loadNilaiLengkap(); } else Swal.fire('Gagal', res.message, 'error'); });
+                } catch (error) { Swal.fire('Error', 'Format Excel salah', 'error'); }
+            }; reader.readAsArrayBuffer(file);
+        }
+        function bukaInputNilai(nis, nama, kategori, nilaiSkrg) { document.getElementById('title-input-nilai').innerText = `Input: ${kategori}`; document.getElementById('desc-input-nilai').innerText = `${nis} - ${nama}`; document.getElementById('in-nis').value = nis; document.getElementById('in-kategori').value = kategori; document.getElementById('in-mapel').value = document.getElementById('filter-mapel').value; document.getElementById('in-score').value = nilaiSkrg > 0 ? nilaiSkrg : ''; showModal('modal-input-nilai'); setTimeout(() => document.getElementById('in-score').focus(), 100); }
+        function prosesSimpanNilai() {
+            let valRaw = document.getElementById('in-score').value; if (valRaw === "") return;
+            let d = { nis: document.getElementById('in-nis').value, mapel: document.getElementById('in-mapel').value, kategori: document.getElementById('in-kategori').value, nilai: parseFloat(valRaw) || 0 };
+            let b = document.getElementById('btn-save-score'); b.innerText = 'Tunggu...'; b.disabled = true;
+            apiPost('saveNilaiKategori', d).then(res => { b.innerText = 'Simpan'; b.disabled = false; if (res.success) { closeModal('modal-input-nilai'); ToastBottom.fire({ icon: 'success', title: `${d.kategori} disimpan!` }); let propMap = { 'LATIHAN 1': 'l1', 'LATIHAN 2': 'l2', 'LATIHAN 3': 'l3', 'UTS': 'uts', 'LATIHAN 4': 'l4', 'LATIHAN 5': 'l5', 'UAS': 'uas' }; let prop = propMap[d.kategori]; let obj = dataNilaiMentah.find(x => x.nis == d.nis); if (obj && prop) { obj[prop] = d.nilai; obj.total = obj.l1 + obj.l2 + obj.l3 + obj.uts + obj.l4 + obj.l5 + obj.uas; dataNilaiMentah.sort((a, b) => b.total - a.total); dataNilaiMentah.forEach((x, i) => x.peringkat = i + 1); updateTableNilai(); } } else Swal.fire('Error', res.message, 'error'); });
+        }
+        function bukaRating(nis, nama, rating, komen) { document.getElementById('desc-rating').innerText = `${nis} - ${nama}`; document.getElementById('rt-nis').value = nis; if (rating > 0) document.getElementById(`star${rating}`).checked = true; else document.querySelectorAll('input[name="rating"]').forEach(el => el.checked = false); document.getElementById('rt-komen').value = komen !== 'undefined' ? komen : ''; showModal('modal-rating'); }
+        function prosesSimpanRating() {
+            let r = document.querySelector('input[name="rating"]:checked'); if (!r) return alert("Pilih minimal 1 bintang!");
+            let d = { nis: document.getElementById('rt-nis').value, rating: r.value, komentar: document.getElementById('rt-komen').value }; let b = document.getElementById('btn-save-rating'); b.innerText = 'Tunggu...'; b.disabled = true;
+            apiPost('savePerilaku', d).then(res => { b.innerText = 'Simpan Evaluasi'; b.disabled = false; if (res.success) { closeModal('modal-rating'); ToastBottom.fire({ icon: 'success', title: `Evaluasi disimpan!` }); let obj = dataNilaiMentah.find(x => x.nis == d.nis); if (obj) { obj.rating = d.rating; obj.komentar = d.komentar; updateTableNilai(); } } });
+        }
+
+        // --- PRESENSI & DAFTAR BELUM HADIR ---
+        function initPresensi() {
+            const ulHadir = document.getElementById('presensi-log'); const tbodyAbsen = document.getElementById('absent-table-body');
+            ulHadir.innerHTML = loadingSVG; tbodyAbsen.innerHTML = `<tr><td colspan="4" class="text-center py-4">Memuat data...</td></tr>`;
+            apiGet('getTodayAttendance').then(res => {
+                if (res.success) {
+                    ulHadir.innerHTML = '';
+                    if (res.data.present.length > 0) { res.data.present.forEach(d => addLogPresensi(d)); } else { ulHadir.innerHTML = '<li class="text-center text-gray-400 py-20 font-medium">Belum ada presensi masuk.</li>'; }
+                    tbodyAbsen.innerHTML = '';
+                    if (res.data.absent.length > 0) {
+                        res.data.absent.forEach(d => {
+                            tbodyAbsen.innerHTML += `<tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50"><td class="px-5 py-3 font-medium">${d.nis}</td><td class="px-5 py-3 font-bold">${d.nama}</td><td class="px-5 py-3 text-center"><span class="bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded text-xs font-bold">${d.kelas}</span></td><td class="px-5 py-3 text-center flex gap-1 justify-center"><button onclick="tandaiAbsen('${d.nis}','${d.nama}','SAKIT')" class="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded text-xs font-bold transition-colors">Sakit</button><button onclick="tandaiAbsen('${d.nis}','${d.nama}','IZIN')" class="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs font-bold transition-colors">Izin</button><button onclick="tandaiAbsen('${d.nis}','${d.nama}','ALFA')" class="px-3 py-1 bg-rose-500 hover:bg-rose-600 text-white rounded text-xs font-bold transition-colors">Alfa</button></td></tr>`;
+                        });
+                    } else { tbodyAbsen.innerHTML = '<tr><td colspan="4" class="text-center py-10 font-bold text-emerald-500">Semua Siswa Telah Hadir/Dikonfirmasi! 🎉</td></tr>'; }
+                }
+            });
+        }
+        function tandaiAbsen(nis, nama, status) {
+            Swal.fire({ title: 'Konfirmasi', text: `Tandai ${nama} sebagai ${status}?`, icon: 'question', showCancelButton: true, confirmButtonText: 'Ya, Tandai' }).then(r => {
+                if (r.isConfirmed) { apiPost('markAbsence', { nis: nis, status: status }).then(res => { if (res.success) { ToastBottom.fire({ icon: 'success', title: `Tersimpan: ${status}` }); initPresensi(); } }); }
+            });
+        }
+
+        function initScanner() { if (!html5QrCode) html5QrCode = new Html5Qrcode("reader"); }
+        function startScanner() { initScanner(); html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 100 } }, onScanSuccess).then(() => { isScanning = true; document.getElementById('btn-start-scan').classList.add('hidden'); document.getElementById('btn-stop-scan').classList.remove('hidden'); }).catch(err => { Swal.fire('Kamera Error', 'Gagal mengakses kamera.', 'error'); }); }
+        function stopScanner() { if (html5QrCode && isScanning) { html5QrCode.stop().then(() => { isScanning = false; document.getElementById('btn-start-scan').classList.remove('hidden'); document.getElementById('btn-stop-scan').classList.add('hidden'); }); } }
+        function beep() { try { const ctx = new (window.AudioContext || window.webkitAudioContext)(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.connect(gain); gain.connect(ctx.destination); osc.type = "sine"; osc.frequency.value = 900; gain.gain.setValueAtTime(0, ctx.currentTime); gain.gain.linearRampToValueAtTime(1, ctx.currentTime + 0.05); gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.1); osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.1); } catch (e) { } }
+        function onScanSuccess(decodedText) {
+            const now = Date.now(); if (decodedText === lastScanData && (now - lastScanTime) < 3000) return; lastScanData = decodedText; lastScanTime = now; beep();
+            Swal.fire({ title: 'Memproses...', text: `NIS: ${decodedText}`, showConfirmButton: false, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            apiPost('recordAttendance', { nis: decodedText }).then(res => { if (res.success) { Swal.fire({ icon: 'success', title: 'Hadir!', text: `${res.data.nama}`, timer: 1500, showConfirmButton: false }); initPresensi(); } else { Swal.fire({ icon: 'error', title: 'Gagal', text: res.message, timer: 2000 }); } });
+        }
+        function addLogPresensi(data) {
+            let isHadir = data.status === 'HADIR'; let iconColor = isHadir ? 'text-emerald-700 dark:text-emerald-300' : 'text-blue-700 dark:text-blue-300'; let bgColor = isHadir ? 'bg-emerald-200 dark:bg-emerald-800' : 'bg-blue-200 dark:bg-blue-800'; let badge = isHadir ? '<span class="text-[10px] font-bold text-emerald-500">HADIR</span>' : `<span class="text-[10px] font-bold text-blue-500">${data.status}</span>`;
+            const ul = document.getElementById('presensi-log');
+            const li = `<li class="p-4 bg-white dark:bg-darkcard border border-gray-100 dark:border-darkborder rounded-xl flex justify-between items-center animate-fade-in shadow-sm"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full ${bgColor} flex items-center justify-center ${iconColor} font-bold"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></div><div><p class="font-bold text-gray-900 dark:text-white">${data.nama}</p><p class="text-xs text-gray-500 dark:text-gray-400">NIS: ${data.nis}</p></div></div><div class="text-right"><span class="block text-sm font-bold text-gray-700 dark:text-gray-300">${data.waktu.split(' ')[1]}</span>${badge}</div></li>`;
+            ul.insertAdjacentHTML('beforeend', li);
+        }
+    </script>
+</body>
+
+</html>
