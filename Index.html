@@ -432,6 +432,7 @@
                                 <thead
                                     class="bg-gray-100/80 dark:bg-slate-800/80 text-gray-500 dark:text-gray-400 font-semibold text-xs uppercase tracking-wider">
                                     <tr>
+                                        <th class="px-5 py-4">No.</th>
                                         <th class="px-5 py-4">NIS / Nama</th>
                                         <th class="px-5 py-4 text-center">Jam Hadir Terbaru</th>
                                         <th class="px-5 py-4 text-center">Total Hadir</th>
@@ -973,10 +974,10 @@
             const tb = document.getElementById('dash-table-body'); tb.innerHTML = '';
             if (dashTableFilter.length === 0) return tb.innerHTML = '<tr><td colspan="6" class="py-10 text-center text-gray-500 font-medium">Data tidak ditemukan.</td></tr>';
             let s = (curDash - 1) * rowDash; let e = s + rowDash;
-            dashTableFilter.slice(s, e).forEach(d => {
+            dashTableFilter.slice(s, e).forEach((d, index) => {
                 let st = ''; for (let i = 0; i < 5; i++) st += (i < d.rating) ? '<span class="text-amber-400">★</span>' : '<span class="text-gray-300 dark:text-gray-600">★</span>';
                 let avgClass = d.rataNilai >= 75 ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' : 'text-rose-600 bg-rose-50 dark:bg-rose-900/20';
-                tb.innerHTML += `<tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50"><td class="px-5 py-4"><p class="font-bold">${d.nama}</p><p class="text-xs text-gray-400">NIS: ${d.nis}</p></td><td class="px-5 py-4 text-center font-bold text-gray-500">${d.jamAkhirHariIni}</td><td class="px-5 py-4 text-center font-bold">${d.totalHadir} Hari</td><td class="px-5 py-4 text-center"><span class="px-2.5 py-1 rounded-lg font-bold ${avgClass}">${d.rataNilai}</span></td><td class="px-5 py-4 text-center text-lg">${st}</td><td class="px-5 py-4 text-center"><button onclick="bukaDetailSiswa('${d.nis}')" class="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 text-blue-600 font-bold rounded-lg text-xs transition-colors">Lihat Profil</button></td></tr>`;
+                tb.innerHTML += `<tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50"><td class="px-5 py-4">${s + index + 1}.</td><td class="px-5 py-4"><p class="font-bold">${d.nama}</p><p class="text-xs text-gray-400">NIS: ${d.nis}</p></td><td class="px-5 py-4 text-center font-bold text-gray-500">${d.jamAkhirHariIni}</td><td class="px-5 py-4 text-center font-bold">${d.totalHadir} Hari</td><td class="px-5 py-4 text-center"><span class="px-2.5 py-1 rounded-lg font-bold ${avgClass}">${d.rataNilai}</span></td><td class="px-5 py-4 text-center text-lg">${st}</td><td class="px-5 py-4 text-center"><button onclick="bukaDetailSiswa('${d.nis}')" class="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 text-blue-600 font-bold rounded-lg text-xs transition-colors">Lihat Profil</button></td></tr>`;
             });
             document.getElementById('page-info-dash').innerText = `Data: ${s + 1} - ${Math.min(e, dashTableFilter.length)} dari ${dashTableFilter.length}`;
             document.getElementById('prev-dash').disabled = curDash === 1; document.getElementById('next-dash').disabled = curDash === Math.ceil(dashTableFilter.length / rowDash) || dashTableFilter.length === 0;
