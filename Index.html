@@ -522,6 +522,7 @@
                                     <th class="px-5 py-4">Nama Peserta Didik</th>
                                     <th class="px-5 py-4 text-center">Kelas</th>
                                     <th class="px-5 py-4 text-center">Status</th>
+                                    <th class="px-5 py-4 text-center">Kontak Orang Tua</th>
                                     <th class="px-5 py-4 text-center">Aksi</th>
                                 </tr>
                             </thead>
@@ -802,6 +803,10 @@
                             type="text" id="m-kelas" required
                             class="w-full p-3 border rounded-xl bg-gray-50 dark:bg-[#0f172a] outline-none"
                             oninput="this.value=this.value.toUpperCase()"></div>
+                    <div><label class="text-xs font-bold text-gray-500 uppercase mb-1 block">No. WhatsApp Ortu</label><input
+                            type="tel" id="m-whatsapp"
+                            class="w-full p-3 border rounded-xl bg-gray-50 dark:bg-[#0f172a] outline-none"
+                            placeholder="Contoh: 6281234567890"></div>
                     <div><label class="text-xs font-bold text-gray-500 uppercase mb-1 block">Status</label><select
                             id="m-status"
                             class="w-full p-3 border rounded-xl bg-gray-50 dark:bg-[#0f172a] outline-none">
@@ -1054,18 +1059,18 @@
         }
         function renderTableSiswa() {
             const tb = document.getElementById('student-table-body'); tb.innerHTML = '';
-            if (dataSiswaFilter.length === 0) return tb.innerHTML = '<tr><td colspan="5" class="py-10 text-center text-gray-500 font-medium">Data tidak ditemukan.</td></tr>';
+            if (dataSiswaFilter.length === 0) return tb.innerHTML = '<tr><td colspan="6" class="py-10 text-center text-gray-500 font-medium">Data tidak ditemukan.</td></tr>';
             let s = (curSiswa - 1) * rowSiswa; let e = s + rowSiswa;
             dataSiswaFilter.slice(s, e).forEach(d => {
                 let stClass = d.status === 'AKTIF' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700';
-                tb.innerHTML += `<tr class="hover:bg-gray-50 dark:hover:bg-slate-800/30"><td class="px-5 py-4 font-medium"><button onclick="bukaBarcode('${d.nis}', '${d.nama}')" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 font-bold flex items-center gap-1.5 transition-colors group"><svg class="w-5 h-5 opacity-70 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h2v16H3V4zm4 0h1v16H7V4zm3 0h3v16h-3V4zm5 0h1v16h-1V4zm3 0h3v16h-3V4z"></path></svg>${d.nis}</button></td><td class="px-5 py-4 font-bold">${d.nama}</td><td class="px-5 py-4 text-center"><span class="bg-gray-100 dark:bg-slate-700 px-3 py-1 rounded-lg text-xs font-bold">${d.kelas}</span></td><td class="px-5 py-4 text-center"><span class="px-3 py-1 rounded-full text-[10px] font-bold ${stClass}">${d.status}</span></td><td class="px-5 py-4 text-center"><button onclick="openModalSiswa('edit', '${d.nis}')" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-xs font-bold mr-1">Edit</button><button onclick="hapusSiswa('${d.nis}', '${d.nama}')" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-xs font-bold">Hapus</button></td></tr>`;
+                tb.innerHTML += `<tr class="hover:bg-gray-50 dark:hover:bg-slate-800/30"><td class="px-5 py-4 font-medium"><button onclick="bukaBarcode('${d.nis}', '${d.nama}')" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 font-bold flex items-center gap-1.5 transition-colors group"><svg class="w-5 h-5 opacity-70 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h2v16H3V4zm4 0h1v16H7V4zm3 0h3v16h-3V4zm5 0h1v16h-1V4zm3 0h3v16h-3V4z"></path></svg>${d.nis}</button></td><td class="px-5 py-4 font-bold">${d.nama}</td><td class="px-5 py-4 text-center"><span class="bg-gray-100 dark:bg-slate-700 px-3 py-1 rounded-lg text-xs font-bold">${d.kelas}</span></td><td class="px-5 py-4 text-center"><span class="px-3 py-1 rounded-full text-[10px] font-bold ${stClass}">${d.status}</span></td><td class="px-5 py-4 text-center"><a href="https://wa.me/${d.noWhatsAppOrtu}" target="_blank" class="text-emerald-600 hover:text-emerald-800 font-bold" title="Kirim WhatsApp">${d.noWhatsAppOrtu || '-'}</a></td><td class="px-5 py-4 text-center"><button onclick="openModalSiswa('edit', '${d.nis}')" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-xs font-bold mr-1">Edit</button><button onclick="hapusSiswa('${d.nis}', '${d.nama}')" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-xs font-bold">Hapus</button></td></tr>`;
             });
             document.getElementById('pagination-info').innerText = `Data: ${s + 1} - ${Math.min(e, dataSiswaFilter.length)} dari ${dataSiswaFilter.length}`;
             document.getElementById('btn-prev').disabled = curSiswa === 1; document.getElementById('btn-next').disabled = curSiswa === Math.ceil(dataSiswaFilter.length / rowSiswa) || dataSiswaFilter.length === 0;
         }
         function changePage(d) { curSiswa += d; renderTableSiswa(); }
         function exportTemplateSiswa() {
-            const ws_data = [["NIS", "Nama", "Kelamin", "Agama", "TempatLahir", "TanggalLahir", "NamaIbu", "NamaAyah", "Kelas", "Status", "Alamat"], ["1001", "Budi Santoso", "LAKI-LAKI", "ISLAM", "Batam", "2005-01-13", "Siti", "Haryanto", "X-RPL 1", "AKTIF", "Jl. Mawar No. 1"]];
+            const ws_data = [["NIS", "Nama", "Kelamin", "Agama", "TempatLahir", "TanggalLahir", "NamaIbu", "NamaAyah", "Kelas", "No_WhatsApp_Ortu", "Status", "Alamat"], ["1001", "Budi Santoso", "LAKI-LAKI", "ISLAM", "Batam", "2005-01-13", "Siti", "Haryanto", "X-RPL 1", "6281234567890", "AKTIF", "Jl. Mawar No. 1"]];
             const ws = XLSX.utils.aoa_to_sheet(ws_data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Template_Siswa"); XLSX.writeFile(wb, "Template_Siswa.xlsx");
         }
         function importExcelSiswa(e) {
@@ -1076,7 +1081,7 @@
                 try {
                     const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
                     const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-                    let payload = jsonData.map(r => ({ nis: r.NIS || "", nama: r.Nama || "", kelamin: r.Kelamin || "", agama: r.Agama || "", tempatLahir: r.TempatLahir || "", tanggalLahir: r.TanggalLahir || "", namaIbu: r.NamaIbu || "", namaAyah: r.NamaAyah || "", kelas: r.Kelas || "", status: r.Status || "AKTIF", alamat: r.Alamat || "" }));
+                    let payload = jsonData.map(r => ({ nis: r.NIS || "", nama: r.Nama || "", kelamin: r.Kelamin || "", agama: r.Agama || "", tempatLahir: r.TempatLahir || "", tanggalLahir: r.TanggalLahir || "", namaIbu: r.NamaIbu || "", namaAyah: r.NamaAyah || "", kelas: r.Kelas || "", noWhatsAppOrtu: r.No_WhatsApp_Ortu || "", status: r.Status || "AKTIF", alamat: r.Alamat || "" }));
                     if (payload.length === 0) return Swal.fire('Error', 'Excel kosong atau format salah', 'error');
                     Swal.fire({ title: 'Mengimpor Data...', text: 'Sedang mengirim ke database...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
                     apiPost('importStudents', payload).then(res => { document.getElementById('file-import').value = ""; if (res.success) { Swal.fire('Selesai!', res.message, 'success'); initSiswa(); } else Swal.fire('Gagal Import', res.message, 'error'); });
@@ -1090,11 +1095,11 @@
             if (mode === 'edit') {
                 let d = dataSiswaMentah.find(x => x.nis == nis); document.getElementById('m-nis-lama').value = d.nis; document.getElementById('m-nis').value = d.nis; document.getElementById('m-nama').value = d.nama; document.getElementById('m-kelamin').value = d.kelamin; document.getElementById('m-agama').value = d.agama; document.getElementById('m-tempat').value = d.tempatLahir;
                 try { let t = d.tanggalLahir; if (t.includes('/')) { let p = t.split('/'); t = `${p[2]}-${p[1]}-${p[0]}`; } document.getElementById('m-tanggal').value = t.substring(0, 10); } catch (e) { }
-                document.getElementById('m-ibu').value = d.namaIbu; document.getElementById('m-ayah').value = d.namaAyah; document.getElementById('m-kelas').value = d.kelas; document.getElementById('m-status').value = d.status; document.getElementById('m-alamat').value = d.alamat;
+                document.getElementById('m-ibu').value = d.namaIbu; document.getElementById('m-ayah').value = d.namaAyah; document.getElementById('m-kelas').value = d.kelas; document.getElementById('m-whatsapp').value = d.noWhatsAppOrtu; document.getElementById('m-status').value = d.status; document.getElementById('m-alamat').value = d.alamat;
             } showModal('modal-siswa');
         }
         function simpanSiswa() {
-            let d = { nis: document.getElementById('m-nis').value, nama: document.getElementById('m-nama').value, kelamin: document.getElementById('m-kelamin').value, agama: document.getElementById('m-agama').value, tempatLahir: document.getElementById('m-tempat').value, tanggalLahir: document.getElementById('m-tanggal').value, namaIbu: document.getElementById('m-ibu').value, namaAyah: document.getElementById('m-ayah').value, kelas: document.getElementById('m-kelas').value, status: document.getElementById('m-status').value, alamat: document.getElementById('m-alamat').value };
+            let d = { nis: document.getElementById('m-nis').value, nama: document.getElementById('m-nama').value, kelamin: document.getElementById('m-kelamin').value, agama: document.getElementById('m-agama').value, tempatLahir: document.getElementById('m-tempat').value, tanggalLahir: document.getElementById('m-tanggal').value, namaIbu: document.getElementById('m-ibu').value, namaAyah: document.getElementById('m-ayah').value, kelas: document.getElementById('m-kelas').value, noWhatsAppOrtu: document.getElementById('m-whatsapp').value, status: document.getElementById('m-status').value, alamat: document.getElementById('m-alamat').value };
             let mode = document.getElementById('m-mode').value; if (mode === 'edit') d.nisLama = document.getElementById('m-nis-lama').value;
             let b = document.getElementById('btn-save-siswa'); b.innerText = 'Menyimpan...'; b.disabled = true;
             apiPost(mode === 'add' ? 'addStudent' : 'updateStudent', d).then(res => { b.innerText = 'Simpan Data'; b.disabled = false; if (res.success) { closeModal('modal-siswa'); ToastBottom.fire({ icon: 'success', title: 'Tersimpan!' }); initSiswa(); } else Swal.fire('Gagal', res.message, 'error'); });
